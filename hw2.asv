@@ -102,35 +102,33 @@ legend('Neyman Pearson','MiniMax');
 % assume not there -> Y = A + Z, Z is N(O,var_z)
 % there -> Y = A + X, X is N(0,var_x), var_x < var_z
 
-ratio_z_xs = [1.01 4 16 32];
+ratio_z_xs = [1.01 1.05 1.25 20];
 x = zeros(2,num_sims);
 A = 1;
 var_x = 1;
-var_z = 15 * var_x;
-accuracys = zeros(1,num_sims);
-for l = 1:num_sims
-    for i = 1:num_sims
-        if rand > not_present_prob %is present
-            x(1,i) = sqrt(var_x) * randn(1) + A;
-            x(2,i) = 1;
-        else %isnt present
-            x(1,i) = sqrt(var_z) * randn(1) + A;
-            x(2,i) = 0;
-        end
+var_z = 1.05 * var_x;
+for i = 1:num_sims
+    if rand > not_present_prob %is present
+        x(1,i) = sqrt(var_x) * randn(1) + A;
+        x(2,i) = 1;
+    else %isnt present
+        x(1,i) = sqrt(var_z) * randn(1) + A;
+        x(2,i) = 0;
     end
-
-    pdf_there = 1/(sqrt(2 * pi * var_x)) * exp(-(x(1,:) - A) .^ 2 / (2 * var_x));
-    pdf_not_there = 1/(sqrt(2 * pi * var_z)) * exp(-(x(1,:) - A) .^2 / (2 * var_z));
-    predictions = ((pdf_there * (1 - not_present_prob)) > (pdf_not_there * not_present_prob));
-    accuracys(l) = sum(predictions == x(2,:)) / num_sims; 
 end
-accuracy = 1-mean(accuracys); %error rate is 1 - accuracy
+
+pdf_there = 1/(sqrt(2 * pi * var_x)) * exp(-(x(1,:) - A) .^ 2 / (2 * var_x));
+pdf_not_there = 1/(sqrt(2 * pi * var_z)) * exp(-(x(1,:) - A) .^2 / (2 * var_z));
+predictions = (pdf_there * (1 - not_present_prob) > pdf_not_there * not_present_prob);
+accuracy = sum(predictions == x(2,:)) / num_sims; %error rate is 1 - accuracy
+
 %ROC Calculations
 etas = linspace(-100,100,num_sims);
 pds = zeros(length(ratio_z_xs),length(etas)); %storage for P_d's 
 pfas = zeros(length(ratio_z_xs),length(etas)); %storage for P_fa's
 for i = 1:length(ratio_z_xs)
-    var_z = var_x * ratio_z_xs(i);
+    var_z = var_x * ratio
+    var = A / snr;
     x = zeros(2,num_sims);
     for j = 1:num_sims %generate the data at this snr
         if rand > not_present_prob %is present
@@ -152,10 +150,10 @@ for i = 1:length(ratio_z_xs)
 end
 
 figure(); 
-subplot(2,2,1); plot(pfas(1,:),pds(1,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio = 1.01');
-subplot(2,2,2);plot(pfas(2,:),pds(2,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio = 4');
-subplot(2,2,3); plot(pfas(3,:),pds(3,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio =  16');
-subplot(2,2,4); plot(pfas(4,:),pds(4,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio = 32');
+subplot(2,2,1); plot(pfas(1,:),pds(1,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio = 2');
+subplot(2,2,2);plot(pfas(2,:),pds(2,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio = 16');
+subplot(2,2,3); plot(pfas(3,:),pds(3,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio =  64');
+subplot(2,2,4); plot(pfas(4,:),pds(4,:)); xlabel('P_f_a'); ylabel('P_d'); title('ROC, Ratio = 256');
 
 
 
