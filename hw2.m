@@ -84,9 +84,10 @@ P_0  = linspace(0,1,num_sims);
 P_1 = ones(1,num_sims) - P_0;
 snr = 10;
 var = A / snr;
+eta = P_0 ./ (factor * P_1);
 pfa = 1 - normcdf((2 * var * log(eta) + A^2) / (2 * A * sqrt(var)));
 pfd = normcdf(((2 * var * log(eta) + A^2) / (2 * A) - A) / sqrt(var));
-risks = P_0 * pfa + factor * P_1 * pfd;
+risks = P_0 .* pfa + factor * P_1 .* pfd;
 
 figure();
 plot(P_0,risks); xlabel('P_0'); ylabel('Risk'); title('Risk as a Function of A-Prioris, SNR = 10');
@@ -94,8 +95,11 @@ plot(P_0,risks); xlabel('P_0'); ylabel('Risk'); title('Risk as a Function of A-P
 
 % assume aprioris not known
 % 'decision rule' : p_d = 1 - (p_f_a / 10) (figure 2 shows decision rule)
-% risk = p_f_a
-hold on; plot(P_0,ones(1,num_sims) * pfd); 
+% risk = p_f_a at some eta which minimizes maximum risk
+[biggest,i] = max(risks);
+eta = eta(i);
+pfa = 1 - normcdf((2 * var * log(eta) + A^2) / (2 * A * sqrt(var)));
+hold on; plot(P_0,pfa * ones(1,num_sims)); 
 legend('Neyman Pearson','MiniMax');
 
 
@@ -233,6 +237,44 @@ for i = 1:length(test_ex)
     predictions(i) = pred;
 end
 
-%results
+%results -- full data
+acc = sum(predictions == test_lab) / length(predictions)
+c_mat = confusionmat(test_lab,predictions)
+
+
+% reduce the dimensionality
+train_ex = [data(1:24,1:2); data(51:75,1:2); data(101:125,1:2)];
+train_lab = [data(1:24,5); data(51:75,5); data(101:125,5)];
+test_ex = [data(25:50,1:2); data(76:100,1:2); data(126:150,1:2)];
+test_lab = [data(25:50,5); data(76:100,5); data(126:150,5)];
+
+% estimate parameters associated with each class assuming each class
+% follows a gaussian distribution
+mu_hat_1 = mean(train_ex(1:24,:));
+cov_hat_1 = cov(train_ex(1:24,:));
+mu_hat_2 = mean(train_ex(25:49,:));
+cov_hat_2 = cov(train_ex(25:49,:));
+mu_hat_3 = mean(train_ex(50:74,:));
+cov_hat_3 = mean(train_ex(50:74,:));
+
+predictions = zeros(length(test_ex),1);
+%calculate the class according to the likelihood test with eta = 1
+for i = 1:length(test_ex) 
+    pred = 1;
+    tmp = test_ex(i,:);
+    if mvnpdf(tmp,mu_hat_2,cov_hat_2) > mvnpdf(tmp,mu_hat_1,cov_hat_1)
+        pred = 2;
+    
+        if mvnpdf(tmp,mu_hat_3,cov_hat_3) > mvnpdf(tmp,mu_hat_2,cov_hat_2)
+            pred = 3;
+        end
+    elseif mvnpdf(tmp,mu_hat_3,cov_hat_3) > mvnpdf(tmp,mu_hat_1,cov_hat_1)
+        pred = 3;
+    end
+        
+    predictions(i) = pred;
+end
+
+%results -- reduced dimensionality
 acc = sum(predictions == test_lab) / length(predictions)
 c_mat = confusionmat(test_lab,predictions)
